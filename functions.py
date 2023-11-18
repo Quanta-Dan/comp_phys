@@ -23,6 +23,51 @@ def generate_complex_ndarray(N:int,D:int)->np.ndarray:
 
 
 
+def distance_array()->np.ndarray:
+    """for given shape of array defined by global N, D  generate an array with the positional indexes centerd on the middle of the array.
+    Used by potential_function to calculate the potential applied to ψ"""
+    global N, D
+    ix = np.ndindex((N,)*D)
+    distance_array = np.zeros((N,)*D)
+    for index in ix:
+        shifted_index = np.array(index)-np.floor(N/2)
+        distance_array[index] = np.sqrt(np.dot(shifted_index, shifted_index))
+    return distance_array
+def n2_array()->np.ndarray:
+    """for given shape of array defined by global N, D  generate an array with the squared positional indexes centerd on the middle of the array.
+    Used by potential_function to calculate the potential applied to ψ"""
+    global N, D
+    ix = np.ndindex((N,)*D)
+    potential_array = np.zeros((N,)*D)
+    for index in ix:
+        shifted_index = np.array(index)-np.floor(N/2)
+        potential_array[index] = np.dot(shifted_index, shifted_index)
+    return potential_array
+
+
+
+def generate_plane_wave(wave_number:tuple):
+    """
+    Generate a square D-dimensional array of size Nrepresenting a plane wave.
+
+    Parameters:
+    - wave_numbers: Tuple, the wave numbers for each dimension.
+
+    Returns:
+    - plane_wave_array: N-dimensional array with complex values.
+    """
+    global N, D
+    assert len(wave_number) == D, "wave_number has lenght "+str(len(wave_number))+", it must have shape D="+str(D)
+    # Calculate the values using the plane wave formula
+    ix = np.ndindex((N,)*D)
+    plane_wave_array = np.zeros((N,)*D)
+    for index in ix:
+        phase = np.dot((np.array(index)-np.floor(N/2)),np.array(wave_number))
+        plane_wave_array[index] = phase
+    plane_wave_array = np.exp(2j * np.pi * plane_wave_array/N)
+
+    return plane_wave_array
+
 ############ Hamilton ##############
 
 def potential_function(psi: np.ndarray)->np.ndarray:
@@ -31,19 +76,9 @@ def potential_function(psi: np.ndarray)->np.ndarray:
     
     assert isinstance(psi,np.ndarray) , "psi must me a ndarray"
 
-    global mu, epsilon_2, N, D, n_array, n2_array
+    global mu, epsilon_2, N, D
 
-    def n2_array()->np.ndarray:
-        """for given shape of array defined by global N, D  generate an array with the squared positional indexes centerd on the middle of the array.
-        Used by potential_function to calculate the potential applied to ψ"""
-        global N, D
-        ix = np.ndindex((N,)*D)
-        potential_array = np.zeros((N,)*D)
-        for index in ix:
-            shifted_index = np.array(index)-np.floor(N/2)
-            potential_array[index] = np.dot(shifted_index, shifted_index)
-        return potential_array
-        
+      
     squared_array_ = n2_array()
 
     V_psi = (mu/8)*((epsilon_2)*squared_array_-1)**2*psi
@@ -95,26 +130,23 @@ def power_method(vshape,apply_A,epsilon,max_iters=1000000):
     mu = np.linalg.norm(apply_A(v))    
     w = apply_A(v)   
     res = np.linalg.norm(w - np.dot(mu,v))
-    #DEBUGGING: store mu and pesi
-    #mu_iters = [mu]
-    #res_iters =[epsy]
+   
     niters = 0
     while res>epsilon and niters < max_iters:        
     
         res = np.linalg.norm(w - np.dot(mu,v))        
         v =  np.dot((1 / mu),w)
         w = apply_A(v)
-        mu = np.linalg.norm(apply_A(v))
-        #DEBUGGING: store mu and residue each iterations
-        #mu_iters.append(mu)
-        #res_iters.append(res)
+        mu = np.linalg.norm(w)
         niters+=1
+    if niters >= max_iters:
+        raise ValueError("Maximum number of iterations reached.")        
             
-    #DEBUGGING: output mu and residue of all iterations
-    return mu, v, niters, #mu_iters, res_iters
+   
+    return mu, v #, niters 
 
 def conjugate_gradient(apply_A,b,epsilon, max_iters = 10000):
-    
+
     x = np.zeros(b.shape)
     r = b- apply_A(x)
     p = r
@@ -136,18 +168,84 @@ def conjugate_gradient(apply_A,b,epsilon, max_iters = 10000):
         p = rnew + beta*p
         r = rnew
         niters+=1
+        print(f'conj grad error = {np.linalg.norm(r)}')
+    if niters >= max_iters:
+        raise ValueError("Maximum number of iterations reached.")    
     
-    
-    return x, niters
+    return x # , niters
 
-def smallest_eigenvalue():
-    A:np.ndarray
+def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float, conjugate_gradient_tolerance: float,
+                                max_iters_power_method = 10000, max_iters_conjugate_gradient= 10000):
+    """Function that calculates the smallest eigenvalue anhd corresponding eigenvector of a matrix"""
+    global A
+    c = rng.standard_normal(size=A.shape) + 1j * rng.standard_normal(size=A.shape)
 
-    def apply_A(v):
-        assert isinstance(v,np.ndarray) , "v must be an np.ndarray"
-        assert v.shape==A.shape , "v has shape "+str(v.shape)+", it must have shape "+str(A.shape)
-        return np.asarray(np.dot(A,v.flatten())).reshape(A.shape)
+
+    # adjust power method and conjugate gradient for local use
+
+    def power_method_EV(vshape, apply_A, epsilon = power_method_tolerance, max_iters=max_iters_power_method):
+        #global random_vector
+        assert callable(apply_A) , "apply_A must be a function"
+        assert isinstance(epsilon, float) and epsilon > 0. , "epsilon=" + str(epsilon) + " must be a positive float"
+        assert isinstance(vshape,tuple) , "vshape must be a tuple"
+        # v = rng.standard_normal(size=vshape) + 1j * rng.standard_normal(size=vshape)
+        # v= v/np.linalg.norm(v)
+        v = c
+        print("power method start vector shape: ",v.shape)
     
-    b:np.ndarray
-    power_method(b.shape,conjugate_gradient,)
+
+        #initialize values before starting loop
+        niters = 0
+        mu = np.linalg.norm(apply_A(v))    
+        w = apply_A(v)   
+        res = np.linalg.norm(w - np.dot(mu,v))
+    
+        niters = 0
+        while res>epsilon and niters < max_iters:        
+        
+            res = np.linalg.norm(w - np.dot(mu,v))        
+            v =  np.dot((1 / mu),w)
+            w = apply_A(v)
+            mu = np.linalg.norm(w)
+            niters+=1
+        if niters >= max_iters:
+            raise ValueError(f"Maximum number of iterations reached during power_method. epsilon = {res}  ")        
+                
+    
+        return mu, v #, niters 
+
+    def conjugate_gradient_EV(b, epsilon = conjugate_gradient_tolerance, max_iters = max_iters_conjugate_gradient):
+
+        x = np.zeros(b.shape)
+        r = b- apply_A(x)
+        p = r
+        niters = 0
+        epsilon_norm_b = epsilon*np.linalg.norm(b)
+        #calculate espilon norm b real part once, then square
+        #norm r^2 .realinstead of root, saves caluclation
+        rnew_2 = np.vdot(r, r).real
+        
+        while np.linalg.norm(r)>epsilon_norm_b and niters < max_iters:
+            #store r and rnew vdot for next iteration
+            Ap = apply_A(p)      
+            r_2 = rnew_2
+            alpha = r_2/np.vdot(p,Ap).real
+            x = x + alpha * p
+            rnew  = r - alpha * Ap
+            rnew_2 = np.vdot(rnew, rnew).real
+            beta = rnew_2/r_2
+            p = rnew + beta*p
+            r = rnew
+            niters+=1
+            #print(f'conj grad error = {np.linalg.norm(r)}')
+        if niters >= max_iters:
+            raise ValueError(f"Maximum number of iterations reached during conjugate_gradient. epsilon = {np.linalg.norm(r)}")    
+        
+        return x # , niters
+
+
+    b = rng.standard_normal(size=A.shape) + 1j * rng.standard_normal(size=A.shape)
+    #conjugate_gradient(apply_A,b,conjugate_gradient_tolerance, max_iters_conjugate_gradient)
+
+    return power_method_EV(b.shape,conjugate_gradient_EV)
 
