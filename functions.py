@@ -98,7 +98,6 @@ def kinetic_energy_function(psi: np.ndarray)->np.ndarray:
         derivative = derivative + (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))+np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-2*psi)
 
     e_kin = -(1/(2*mu*epsilon_2))*derivative
-
     return e_kin
 
 
@@ -178,12 +177,11 @@ def conjugate_gradient(apply_A,b,epsilon, max_iters = 10000):
     return x, niters
 
 
-def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float, conjugate_gradient_tolerance: float,
+def lowest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float, conjugate_gradient_tolerance: float,
                                 max_iters_power_method = 10000, max_iters_conjugate_gradient= 10000):
     """Function that calculates the smallest eigenvalue anhd corresponding eigenvector of a matrix"""
     global A, D, N
-    c = rng.standard_normal(size=A.shape) + 1j * rng.standard_normal(size=A.shape)
-
+    
 
     # adjust power method and conjugate gradient for local use
 
@@ -194,7 +192,7 @@ def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float,
         assert isinstance(vshape,tuple) , "vshape must be a tuple"
         # v = rng.standard_normal(size=vshape) + 1j * rng.standard_normal(size=vshape)
         # v= v/np.linalg.norm(v)
-        v = c
+        v = b
         print("power method start vector shape: ",v.shape)
     
 
@@ -219,7 +217,7 @@ def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float,
         return mu, v #, niters 
 
     def conjugate_gradient_EV(b, epsilon = conjugate_gradient_tolerance, max_iters = max_iters_conjugate_gradient):
-        print(apply_A)
+        #print(apply_A)
         x = np.zeros(b.shape)
         r = b- apply_A(x)
         p = r
@@ -244,15 +242,12 @@ def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float,
             # print(f'conj grad error = {np.linalg.norm(r)}')
         if niters >= max_iters:
             raise ValueError(f"Maximum number of iterations reached during conjugate_gradient. epsilon = {np.linalg.norm(r)}")    
-        print("complete")
+        #print("complete")
         return x # , niters
 
-
-    #b = rng.standard_normal(size=A.shape) + 1j * rng.standard_normal(size=A.shape)
-    k_vector = rng.standard_normal(size=(D,1))
-    
-    b = generate_plane_wave(tuple(k_vector))
-    print(b)
+    shape = (N,)*D
+    b = rng.standard_normal(size=shape) + 1j * rng.standard_normal(size=shape)
+    # print(b)
     #conjugate_gradient(apply_A,b,conjugate_gradient_tolerance, max_iters_conjugate_gradient)
 
     return power_method_EV(b.shape,conjugate_gradient_EV)
@@ -263,17 +258,36 @@ def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float,
 
 
 def expectation_energy(psi:np.ndarray)->float:
-    """Caluculates expectation value of energy."""
+    """Caluculates expectation value of energy for wavefunction psi."""
     return np.vdot(psi, hamiltonian_function(psi))
 
 def expectation_position(psi:np.ndarray)->float:
-    """Caluculates expectation value of energy."""
+    """Caluculates expectation value of position for wavefunction psi."""
     return np.vdot(psi, distance_array()*psi)
 
 def expectation_momentum(psi:np.ndarray)->float:
-    """Caluculates expectation value of energy."""
+    """Caluculates expectation value of momentum for wavefunction psi."""
+    global mu, epsilon_2, N, D
     derivative = np.zeros((N,)*D)
     for i in range(D):
         derivative = derivative + (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D))))
 
-    return np.vdot(psi, derivative*scaling)
+    return np.vdot(psi, -1j*derivative*scaling)
+
+def indetermination_position(psi:np.ndarray)->float:
+    """Calculate indetermination of position for wavefunction psi."""
+    return np.vdot(psi, n2_array()*psi)-expectation_position**2
+
+def indetermination_momentum(psi:np.ndarray)->float:
+    """Calculate indetermination of momentum for wavefunction psi."""
+    global mu, epsilon_2, N, D
+    second_derivative = np.zeros((N,)*D)
+    for i in range(D):
+        second_derivative = second_derivative + (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))+np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-2*psi)
+  
+    return np.vdot(psi, -second_derivative*scaling)-expectation_momentum**2
+
+def probability_xg0(psi:np.ndarray)->float:
+    """Calculate probability that the particle is found in x>0 for wavefunction psi."""
+    psi_l0, psi_g0 = np.split(psi, 2, aixs = 0)
+    return np.vdot(psi_g0, psi_g0)
