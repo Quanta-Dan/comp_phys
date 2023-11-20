@@ -41,6 +41,7 @@ epsilon_2 = epsilon**2
 functions.N = N
 functions.D = D
 functions.mu = mu
+functions.epsilon = epsilon
 functions.epsilon_2 = epsilon_2
 
 #calculate lowest eigenvalue and eigenvector
@@ -49,3 +50,24 @@ lowest_EigValue, lowest_EigVector = lowest_eigenvalue_vector(hamiltonian_functio
 # #write eigenvector to csv
 df_EigVector = pd.DataFrame(lowest_EigVector)
 df_EigVector.to_csv(f'eigenvector_{D, N, L_over_r, mu}.csv', header=None, index=None, sep = ',')
+
+# Initialize arbitrary plane wave function
+psi = generate_plane_wave((1,)*D)
+
+# Printing the expectation energy for the given wave function psi
+print("Expectation Energy:", expectation_energy(psi))
+
+# Printing the expectation momentum for the given wave function psi
+print("Expectation Momentum:", expectation_momentum(psi))
+
+# Printing the expectation position for the given wave function psi
+print("Expectation Position:", expectation_position(psi))
+
+# Printing the indetermination of momentum for the given wave function psi
+print("Indetermination Momentum:", indetermination_momentum(psi))
+
+# Printing the indetermination of position for the given wave function psi
+print("Indetermination Position:", indetermination_position(psi))
+
+# Printing the probability for x greater than 0 for the given wave function psi
+print("Probability for x > 0:", probability_xg0(psi))
