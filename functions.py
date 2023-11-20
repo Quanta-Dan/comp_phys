@@ -93,8 +93,11 @@ def kinetic_energy_function(psi: np.ndarray)->np.ndarray:
     assert isinstance(psi,np.ndarray) , "psi must me a ndarray"
 
     global mu, epsilon_2, N, D
+    derivative = np.zeros((N,)*D)
+    for i in range(D):
+        derivative = derivative + (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))+np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-2*psi)
 
-    e_kin = -1/(2*mu*epsilon_2)*(np.roll(psi,1)+np.roll(psi,-1)-2*psi)
+    e_kin = -(1/(2*mu*epsilon_2))*derivative
 
     return e_kin
 
@@ -168,16 +171,17 @@ def conjugate_gradient(apply_A,b,epsilon, max_iters = 10000):
         p = rnew + beta*p
         r = rnew
         niters+=1
-        print(f'conj grad error = {np.linalg.norm(r)}')
+        print(np.linalg.norm(r))
     if niters >= max_iters:
-        raise ValueError("Maximum number of iterations reached.")    
+        raise ValueError(f"Maximum number of iterations reached during conjugate_gradient. epsilon = {np.linalg.norm(r)}")
     
-    return x # , niters
+    return x, niters
+
 
 def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float, conjugate_gradient_tolerance: float,
                                 max_iters_power_method = 10000, max_iters_conjugate_gradient= 10000):
     """Function that calculates the smallest eigenvalue anhd corresponding eigenvector of a matrix"""
-    global A
+    global A, D, N
     c = rng.standard_normal(size=A.shape) + 1j * rng.standard_normal(size=A.shape)
 
 
@@ -215,7 +219,7 @@ def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float,
         return mu, v #, niters 
 
     def conjugate_gradient_EV(b, epsilon = conjugate_gradient_tolerance, max_iters = max_iters_conjugate_gradient):
-
+        print(apply_A)
         x = np.zeros(b.shape)
         r = b- apply_A(x)
         p = r
@@ -237,15 +241,39 @@ def smallest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float,
             p = rnew + beta*p
             r = rnew
             niters+=1
-            #print(f'conj grad error = {np.linalg.norm(r)}')
+            # print(f'conj grad error = {np.linalg.norm(r)}')
         if niters >= max_iters:
             raise ValueError(f"Maximum number of iterations reached during conjugate_gradient. epsilon = {np.linalg.norm(r)}")    
-        
+        print("complete")
         return x # , niters
 
 
-    b = rng.standard_normal(size=A.shape) + 1j * rng.standard_normal(size=A.shape)
+    #b = rng.standard_normal(size=A.shape) + 1j * rng.standard_normal(size=A.shape)
+    k_vector = rng.standard_normal(size=(D,1))
+    
+    b = generate_plane_wave(tuple(k_vector))
+    print(b)
     #conjugate_gradient(apply_A,b,conjugate_gradient_tolerance, max_iters_conjugate_gradient)
 
     return power_method_EV(b.shape,conjugate_gradient_EV)
 
+
+
+############ Observables ##############
+
+
+def expectation_energy(psi:np.ndarray)->float:
+    """Caluculates expectation value of energy."""
+    return np.vdot(psi, hamiltonian_function(psi))
+
+def expectation_position(psi:np.ndarray)->float:
+    """Caluculates expectation value of energy."""
+    return np.vdot(psi, distance_array()*psi)
+
+def expectation_momentum(psi:np.ndarray)->float:
+    """Caluculates expectation value of energy."""
+    derivative = np.zeros((N,)*D)
+    for i in range(D):
+        derivative = derivative + (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D))))
+
+    return np.vdot(psi, derivative*scaling)
