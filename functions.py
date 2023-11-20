@@ -21,7 +21,13 @@ def generate_complex_ndarray(N:int,D:int)->np.ndarray:
     A = rng.standard_normal(size=(N,)*D) + 1j * rng.standard_normal(size=(N,)*D)
     return A
 
-
+def position_array(axis:int)->np.ndarray:
+    """Returns the array of coordinates for a given axis."""
+    global N, D
+    position_array = np.zeros((N,)*D)
+    indices = np.indices(position_array.shape, dtype=int)
+    coordinates = indices[axis]
+    return coordinates
 
 def distance_array()->np.ndarray:
     """for given shape of array defined by global N, D  generate an array with the positional indexes centerd on the middle of the array.
@@ -33,6 +39,7 @@ def distance_array()->np.ndarray:
         shifted_index = np.array(index)-np.floor(N/2)
         distance_array[index] = np.sqrt(np.dot(shifted_index, shifted_index))
     return distance_array
+
 def n2_array()->np.ndarray:
     """for given shape of array defined by global N, D  generate an array with the squared positional indexes centerd on the middle of the array.
     Used by potential_function to calculate the potential applied to ψ"""
@@ -251,29 +258,36 @@ def expectation_energy(psi:np.ndarray)->float:
 
 def expectation_position(psi:np.ndarray)->float:
     """Caluculates expectation value of position for wavefunction psi."""
-    return np.vdot(psi, distance_array()*psi).real
+    global D
+    position_vector = np.empty((D,1))
+    for i in range(0,D):
+        position_vector[i]=(np.vdot(psi, position_array(i)*psi).real)
+    return position_vector
 
 def expectation_momentum(psi:np.ndarray)->float:
     """Caluculates expectation value of momentum for wavefunction psi."""
     global mu, epsilon, N, D
-    derivative = np.zeros((N,)*D)
+    momentum_expct = np.zeros((D,1))
     for i in range(D):
-        derivative = derivative + (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D))))
-
-    return np.vdot(psi, -(1/2)*1j*1/(mu*epsilon)*derivative).real
-
+        derivative =(np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D))))
+        momentum_expct[i]= np.vdot(psi, -(1/2)*1j*1/(mu*epsilon)*derivative).real
+    return momentum_expct
 def indetermination_position(psi:np.ndarray)->float:
     """Calculate indetermination of position for wavefunction psi."""
-    return np.vdot(psi, distance_array()*distance_array()*psi).real-expectation_position(psi)**2
+    global D
+    position2_vector = np.empty((D,1))
+    for i in range(0,D):
+        position2_vector[i]=(np.vdot(psi, position_array(i)*position_array(i)*psi).real)
+    return position2_vector-expectation_position(psi)**2
 
 def indetermination_momentum(psi:np.ndarray)->float:
     """Calculate indetermination of momentum for wavefunction psi."""
     global mu, epsilon_2, N, D
-    second_derivative = np.zeros((N,)*D)
+    second_derivative = np.zeros((D,1))
     for i in range(D):
-        second_derivative = second_derivative + (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))+np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-2*psi)
-  
-    return np.vdot(psi, -1/(mu**2*epsilon_2)*second_derivative).real-expectation_momentum(psi)**2
+        derivative_2= (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))+np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-2*psi)
+        second_derivative[i] = np.vdot(psi, -1/(mu**2*epsilon_2)*derivative_2).real
+    return second_derivative-expectation_momentum(psi)**2
 
 def probability_xg0(psi:np.ndarray)->float:
     """Calculate probability that the particle is found in x>0 for wavefunction psi."""
