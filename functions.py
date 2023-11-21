@@ -253,11 +253,11 @@ def lowest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float, c
 
 
 def expectation_energy(psi:np.ndarray)->float:
-    """Caluculates expectation value of energy for wavefunction psi."""
+    """Calculates expectation value of energy for wavefunction psi."""
     return np.vdot(psi, hamiltonian_function(psi)).real
 
 def expectation_position(psi:np.ndarray)->float:
-    """Caluculates expectation value of position for wavefunction psi."""
+    """Calculates expectation value of position for wavefunction psi."""
     global D
     position_vector = np.empty((D,1))
     for i in range(0,D):
@@ -265,15 +265,16 @@ def expectation_position(psi:np.ndarray)->float:
     return position_vector
 
 def expectation_momentum(psi:np.ndarray)->float:
-    """Caluculates expectation value of momentum for wavefunction psi."""
+    """Calculates expectation value of momentum for wavefunction psi."""
     global mu, epsilon, N, D
     momentum_expct = np.zeros((D,1))
     for i in range(D):
         derivative =(np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D))))
         momentum_expct[i]= np.vdot(psi, -(1/2)*1j*1/(mu*epsilon)*derivative).real
     return momentum_expct
+
 def indetermination_position(psi:np.ndarray)->float:
-    """Calculate indetermination of position for wavefunction psi."""
+    """Calculates indetermination of position for wavefunction psi."""
     global D
     position2_vector = np.empty((D,1))
     for i in range(0,D):
@@ -281,7 +282,7 @@ def indetermination_position(psi:np.ndarray)->float:
     return position2_vector-expectation_position(psi)**2
 
 def indetermination_momentum(psi:np.ndarray)->float:
-    """Calculate indetermination of momentum for wavefunction psi."""
+    """Calculates indetermination of momentum for wavefunction psi."""
     global mu, epsilon_2, N, D
     second_derivative = np.zeros((D,1))
     for i in range(D):
@@ -290,6 +291,6 @@ def indetermination_momentum(psi:np.ndarray)->float:
     return second_derivative-expectation_momentum(psi)**2
 
 def probability_xg0(psi:np.ndarray)->float:
-    """Calculate probability that the particle is found in x>0 for wavefunction psi."""
+    """Calculates probability that the particle is found in x>0 for wavefunction psi."""
     psi_l0, psi_g0 = np.array_split(psi, 2, axis = 0)
     return np.vdot(psi_g0, psi_g0).real/np.vdot(psi, psi).real
