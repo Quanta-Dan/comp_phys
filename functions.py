@@ -213,9 +213,10 @@ def lowest_eigenvalue_vector(apply_A:callable,  power_method_tolerance: float, c
             w = apply_A(v)
             mu = np.linalg.norm(w)
             niters+=1
+            print(f"Power method iterations: {niters}/{max_iters}", end='\r')
         if niters >= max_iters:
-            raise ValueError(f"Maximum number of iterations reached during power_method. epsilon = {res}  ")        
-                
+            print(f"Maximum number of iterations reached during power_method. epsilon = {res}  ")        
+            return mu, v        
     
         return mu, v
 
