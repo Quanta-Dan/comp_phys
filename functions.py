@@ -1,5 +1,5 @@
 import numpy as np
-import numpy as np
+import pandas as pd
 rng = np.random.Generator(np.random.PCG64(12345))
 
 
@@ -294,3 +294,53 @@ def probability_xg0(psi:np.ndarray)->float:
     """Calculates probability that the particle is found in x>0 for wavefunction psi."""
     psi_l0, psi_g0 = np.array_split(psi, 2, axis = 0)
     return np.vdot(psi_g0, psi_g0).real/np.vdot(psi, psi).real
+
+def norm(psi:np.ndarray)->float:
+    """Calculates norm of wavefunction psi."""
+    norm = np.vdot(psi,psi).real
+    return norm
+    
+def expectation_kinetic_energy(psi:np.ndarray)->float:
+    """Calculates expectation value of Kinetic energy for wavefunction psi."""
+    return np.vdot(psi, kinetic_energy_function(psi)).real
+
+def expectation_potential_energy(psi:np.ndarray)->float:
+    """Calculates expectation value of Potential energy for wavefunction psi."""
+    return np.vdot(psi, potential_function(psi)).real
+
+############ Time Evolution ##############
+
+def integrator_euler(psi:np.ndarray, time_step: float)->np.ndarray:
+    """Evolves function psi by provided timestep."""
+    step_function = psi - 1j*time_step*hamiltonian_function(psi)
+    return step_function
+
+def integrator_crank_nicolson():
+    pass
+
+def integrator_strang_splitting():
+    pass
+
+
+
+
+# main call 
+
+def time_evolution(psi:np.ndarray, integrator, time_step: float, time_total: float)->pd.DataFrame:
+    assert callable(integrator) , "ntegrator must be a function"
+    assert isinstance(time_step, float) and time_step > 0. , "time_step=" + str(time_step) + " must be a positive float"
+    assert isinstance(time_total, float) and time_total > 0. , "time_total=" + str(time_total) + " must be a positive float"
+    
+    
+    time_elapsed = 0
+    evolution_log = pd.DataFrame(columns = ['norm', 'exp_Etot', 'exp_Ekin','exp_Epot', 'exp_pos', 'indet_pos'])
+    while time_elapsed <= time_total:
+        evolved_psi = integrator( psi, time_step)
+        step_log = {'time':time_elapsed, 'function':evolved_psi,'norm':norm(evolved_psi), 'exp_Etot':expectation_energy(evolved_psi), 'exp_Ekin':expectation_kinetic_energy(evolved_psi), 'exp_Epot':expectation_potential_energy(evolved_psi),  'exp_pos':expectation_position(evolved_psi), 'indet_pos':indetermination_position(evolved_psi)}
+        step_df = pd.DataFrame([step_log])
+        evolution_log = pd.concat([evolution_log, step_df], axis= 0)
+        psi = evolved_psi
+        time_elapsed+=time_step
+    
+    return evolution_log
+    
