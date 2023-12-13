@@ -30,7 +30,7 @@ def position_array(axis:int)->np.ndarray:
     return coordinates
 
 def distance_array()->np.ndarray:
-    """for given shape of array defined by global N, D  generate an array with the positional indexes centerd on the middle of the array.
+    """for given shape of array defined by global N, D  generate an array with the positional indexes centered on the middle of the array.
     Used by potential_function to calculate the potential applied to ψ"""
     global N, D
     ix = np.ndindex((N,)*D)
@@ -310,6 +310,31 @@ def expectation_potential_energy(psi:np.ndarray)->float:
     return np.vdot(psi, potential_function(psi)).real
 
 ############ Time Evolution ##############
+
+def generate_gauss(k0: np.ndarray, origin:np.ndarray, width: float)->np.ndarray:
+    """
+    Generate a square D-dimensional array of size N representing a gaussian wave packet.
+
+    Parameters:
+    - k0: np.ndarray, maximum of gaussian in momentum space.
+    - origin: tuple, origin coordinates (relative to center) of the gaussian wave packet
+    Returns:
+    - np.ndarray for the wavefunction 
+    """
+    global N, D
+    ix = np.ndindex((N,)*D)
+    gaussian = np.zeros((N,)*D)
+    # Calculate the values using the plane wave formula
+    ix = np.ndindex((N,)*D)
+    for index in ix:
+        position= (np.array(index-np.floor(N/2))-origin-1j*k0/2)
+        entry = np.sqrt(np.sqrt(2/np.pi))*np.exp(-0.25*np.vdot(k0, k0))*np.exp(-np.vdot(position, position)/width)
+    
+        gaussian[index] =     entry 
+
+    return gaussian
+
+
 
 def integrator_euler(psi:np.ndarray, time_step: float)->np.ndarray:
     """Evolves function psi by provided timestep."""
