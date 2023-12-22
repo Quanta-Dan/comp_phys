@@ -35,7 +35,7 @@ def position_array(axis:int)->np.ndarray:
     global N, D
     position_array = np.zeros((N,)*D)
     indices = np.indices(position_array.shape, dtype=int)
-    coordinates = indices[axis]
+    coordinates = indices[axis]-N/2
     return coordinates
 
 
@@ -117,7 +117,7 @@ def potential_wall_array_calculator(axis:int, height, origin, greater:int)->np.n
     potential_wall_array = np.zeros((N,)*D)
     ix = np.ndindex((N,)*D)
     for index in ix:
-        if greater*(position[index]-np.floor(N/2)-origin)>0:
+        if greater*(position[index]-origin)>0:
             potential_wall_array[index] = height*(mu)
         else:
             potential_wall_array[index] = 0
@@ -308,9 +308,9 @@ def expectation_position(psi:np.ndarray)->float:
     - numpy.ndarray: expectation value of position as an array.
     """
     global D
-    position_vector = np.empty((D,1))
+    position_vector = np.empty((D,1))*epsilon
     for i in range(0,D):
-        position_vector[i]=(np.vdot(psi, position_array(i)*psi).real)
+        position_vector[i]=(np.vdot(psi, position_array(i)*psi).real)*epsilon
     return position_vector
 
 def expectation_momentum(psi:np.ndarray)->float:
@@ -340,10 +340,10 @@ def indetermination_position(psi:np.ndarray)->float:
     ## Returns
     - numpy.ndarray: indetermination of position as an array.
     """
-    global D
+    global D, epsilon
     position2_vector = np.empty((D,1))
     for i in range(0,D):
-        position2_vector[i]=(np.vdot(psi, position_array(i)*position_array(i)*psi).real)
+        position2_vector[i]=(np.vdot(psi, position_array(i)**2*psi).real)*(epsilon**2)
     return position2_vector-expectation_position(psi)**2
 
 def indetermination_momentum(psi:np.ndarray)->float:
@@ -360,7 +360,7 @@ def indetermination_momentum(psi:np.ndarray)->float:
     second_derivative = np.zeros((D,1))
     for i in range(D):
         derivative_2= (np.roll(psi,[1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))+np.roll(psi,[-1 if index == i else 0 for index in range(D)], axis=tuple(range(D)))-2*psi)
-        second_derivative[i] = np.vdot(psi, -1/(mu**2*epsilon_2)*derivative_2).real
+        second_derivative[i] = np.vdot(psi, -1/(4*mu**2*epsilon_2)*derivative_2).real
     return second_derivative-expectation_momentum(psi)**2
 
 def probability_xg0(psi:np.ndarray)->float:
