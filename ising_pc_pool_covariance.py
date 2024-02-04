@@ -100,24 +100,23 @@ for i, b in enumerate(b_array):
 
 
 
-W_array = np.linspace(30,100,71)
+W_array = np.linspace(15,16,2)
 W_steps = W_array.shape[0]
 Nth = Thermalization_start
 S_M_vs_b_array = np.zeros((beta_steps, b_steps, W_steps))
 S_E_vs_b_array = np.zeros((beta_steps, b_steps, W_steps))
 error_M_vs_b_array = np.zeros((beta_steps, b_steps, W_steps))
 error_E_vs_b_array = np.zeros((beta_steps, b_steps, W_steps))
-b_array = np.array([0.01])
 for l,W in enumerate(W_array):
     for i, b in enumerate(b_array):        
         for j, beta in enumerate(beta_array):
             for n in range(Nth, config_number):
                 for m in range(int(max(Nth, n - W)), int(min(config_number, n + W+1))):
-                    S_M_vs_b_array[j,i,l] += magnetization_vs_beta[m,j, i]*magnetization_vs_beta[n,j, i]
-                    S_E_vs_b_array[j,i,l] += energy_vs_beta[m,j, i]*energy_vs_beta[n,j, i]
+                    S_M_vs_b_array[j,i,l] += (magnetization_vs_beta[m,j, i]- average_M_vs_b_array[j,i])*(magnetization_vs_beta[n,j, i]- average_M_vs_b_array[j,i])
+                    S_E_vs_b_array[j,i,l] += (energy_vs_beta[m,j, i]-average_E_vs_b_array[j,i])*(energy_vs_beta[n,j, i]-average_E_vs_b_array[j,i])
 S_M_vs_b_array = S_M_vs_b_array/((config_number-Nth)**2)
 S_E_vs_b_array = S_E_vs_b_array/((config_number-Nth)**2)        
 
 
-np.save(f'ising_output/S_M_vs_b_{config_number}c_{beta_steps}beta.npy', S_M_vs_b_array)
-np.save(f'ising_output/S_E_vs_b_{config_number}c_{beta_steps}beta.npy', S_E_vs_b_array)
+np.save(f'ising_output/S_M_vs_b_W{W_array}_{config_number}c_{beta_steps}beta.npy', S_M_vs_b_array)
+np.save(f'ising_output/S_E_vs_b_W{W_array}_{config_number}c_{beta_steps}beta.npy', S_E_vs_b_array)
