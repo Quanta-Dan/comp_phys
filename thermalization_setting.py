@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 b_array = np.array([0.01,0.005,0.001,0.0005,0.0001])
 b_steps = b_array.shape[0]
 
-config_number = 10000
-beta_steps = 10
+config_number = 100000
+beta_steps = 20
 beta_max = 1
 beta_min = 0.2
 N = 100
