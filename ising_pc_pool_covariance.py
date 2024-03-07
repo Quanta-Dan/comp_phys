@@ -98,25 +98,24 @@ for i, b in enumerate(b_array):
         average_M_vs_b_array[j,i] = np.mean(magnetization_vs_beta[Thermalization_start:,j, i])
         average_E_vs_b_array[j,i] = np.mean(energy_vs_beta[Thermalization_start:,j, i])
 
+thermalization_array = np.load(f'ising_output/thermalization_array_{config_number}.npy')
 
-
-W_array = np.linspace(15,16,2)
+W_array = np.linspace(40,41,2)
 W_steps = W_array.shape[0]
 Nth = Thermalization_start
 S_M_vs_b_array = np.zeros((beta_steps, b_steps, W_steps))
 S_E_vs_b_array = np.zeros((beta_steps, b_steps, W_steps))
-error_M_vs_b_array = np.zeros((beta_steps, b_steps, W_steps))
-error_E_vs_b_array = np.zeros((beta_steps, b_steps, W_steps))
 for l,W in enumerate(W_array):
     for i, b in enumerate(b_array):        
         for j, beta in enumerate(beta_array):
-            for n in range(Nth, config_number):
-                for m in range(int(max(Nth, n - W)), int(min(config_number, n + W+1))):
+            print(b, beta)        
+            for n in range(thermalization_array[i,j], config_number):
+                for m in range(int(max(thermalization_array[i,j], n - W)), int(min(config_number, n + W+1))):
                     S_M_vs_b_array[j,i,l] += (magnetization_vs_beta[m,j, i]- average_M_vs_b_array[j,i])*(magnetization_vs_beta[n,j, i]- average_M_vs_b_array[j,i])
                     S_E_vs_b_array[j,i,l] += (energy_vs_beta[m,j, i]-average_E_vs_b_array[j,i])*(energy_vs_beta[n,j, i]-average_E_vs_b_array[j,i])
-S_M_vs_b_array = S_M_vs_b_array/((config_number-Nth)**2)
-S_E_vs_b_array = S_E_vs_b_array/((config_number-Nth)**2)        
+S_M_vs_b_array = S_M_vs_b_array/((config_number-thermalization_array[i,j])**2)
+S_E_vs_b_array = S_E_vs_b_array/((config_number-thermalization_array[i,j])**2) 
 
 
-np.save(f'ising_output/S_M_vs_b_W{W_array}_{config_number}c_{beta_steps}beta.npy', S_M_vs_b_array)
-np.save(f'ising_output/S_E_vs_b_W{W_array}_{config_number}c_{beta_steps}beta.npy', S_E_vs_b_array)
+np.save(f'ising_output/S_M_vs_b_W{W_array}_{config_number}c_{beta_steps}beta_therm.npy', S_M_vs_b_array)
+np.save(f'ising_output/S_E_vs_b_W{W_array}_{config_number}c_{beta_steps}beta_therm.npy', S_E_vs_b_array)

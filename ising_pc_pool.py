@@ -77,7 +77,7 @@ b_steps = b_array.shape[0]
 
 config_number = 100000
 beta_steps = 100
-beta_max = 1
+beta_max = 0.55
 beta_min = 0.2
 N = 100
 D = 2
@@ -91,7 +91,7 @@ energy_vs_beta = np.zeros((config_number,beta_steps, b_steps))
 for i, b in enumerate(b_array):
     for j, beta in enumerate(beta_array):
         print(f'{i+1}/{b_steps}, {j+1}/{beta_steps}', end = '\r')
-        magnetization_history, energy_history = metropolis_algorithm(N,D,beta,b, np.random.randint(1,100), config_number, initial_state)
+        magnetization_history, energy_history = metropolis_algorithm(N,D,beta,b, np.random.randint(1,1000), config_number, initial_state)
         magnetization_vs_beta[:,j,i]= magnetization_history/(N**D)
         energy_vs_beta[:,j,i] = energy_history/(N**D)
 
